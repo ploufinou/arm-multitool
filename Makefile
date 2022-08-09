@@ -5,8 +5,8 @@ CC=$(ARCH)gcc
 AS=$(ARCH)as
 STRIP=$(ARCH)strip
 
-LDFLAGS=-nostdlib -static
-CFLAGS=-nostdlib -DPORT=$(PORT) -DIP=$(IP) -DFILENAME=$(FILENAME) -DPROCESS_NAME=$(PROCESS_NAME) -Os -mthumb -Wall
+LDFLAGS=-nostdlib -static -Wl,--gc-sections
+CFLAGS=-nostdlib -DPORT=$(PORT) -DIP=$(IP) -DFILENAME=$(FILENAME) -DPROCESS_NAME=$(PROCESS_NAME) -Os -mthumb -Wall -ffunction-sections -fdata-sections 
 
 EXECS = arm-multitool
 
