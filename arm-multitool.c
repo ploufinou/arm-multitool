@@ -34,9 +34,8 @@ void daemonize() {
 
         ret = syscall(SC_FORK, 0, 0, 0, 0, 0);
         if (ret != 0) syscall(SC_EXIT, 0, 0, 0, 0, 0);
-        syscall(SC_CLOSE, 0, 0, 0, 0, 0);
-        syscall(SC_CLOSE, 1, 0, 0, 0, 0);
-        syscall(SC_CLOSE, 2, 0, 0, 0, 0);
+        for (ret = 0; ret < 3; ret++)
+		syscall(SC_CLOSE, ret, 0, 0, 0, 0);
         syscall(SC_SETSID, 0, 0, 0, 0, 0);
 }
 
