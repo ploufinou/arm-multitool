@@ -169,6 +169,7 @@ void do_tty(int sock) {
 		check(sock, r, "Failed to exec shell", 0);
 	}
 	communicate(sock, master);
+	syscall(SC_CLOSE, master, 0, 0, 0, 0);
 }
 
 void do_connect(int sock, uint32_t addr, int port) {
@@ -191,6 +192,7 @@ void do_connect(int sock, uint32_t addr, int port) {
 	fputstring(sock, "4 CONNECT\n");
 
 	communicate(sock, s);
+	syscall(SC_CLOSE, s, 0, 0, 0, 0);
 }
 
 void do_bind(int sock, int port) {
@@ -231,6 +233,7 @@ void do_bind(int sock, int port) {
 	syscall(SC_CLOSE, s, 0, 0, 0, 0);
 
 	communicate(sock, cs);
+	syscall(SC_CLOSE, cs, 0, 0, 0, 0);
 }
 
 void do_download(int sock, char *path) {
@@ -260,6 +263,8 @@ void do_download(int sock, char *path) {
 	}
 	if (ret == 0)
 		fputstring(sock, "0 File transfer successful\n");
+
+	syscall(SC_CLOSE, fd, 0, 0, 0, 0);
 }
 
 void do_upload(int sock, char *path, int size) {
@@ -283,6 +288,7 @@ void do_upload(int sock, char *path, int size) {
 		total += ret;
 	}
 	fputstring(sock, "0 File transfer successful\n");
+	syscall(SC_CLOSE, fd, 0, 0, 0, 0);
 }
 
 
