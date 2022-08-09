@@ -283,7 +283,7 @@ void do_upload(int sock, char *path, int size) {
 
 	while (total < size) {
 		ret = forward(sock, fd, sock);
-		if (ret < 0) return;
+		if (ret <= 0) return;
 
 		total += ret;
 	}
