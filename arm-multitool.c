@@ -107,21 +107,13 @@ void do_shell(int sock) {
 	check(sock, r, "3 Failed to exec shell", 0);
 }
 
-void divmod(int a, int b, int *q, int *r) {
-	*q = 0;
-	while (a > b) {
-		(*q)++;
-		a = a - b;
-	}
-	*r = a;
-}
-
 char *num_append(char *s, int num) {
 	int q,r;
-	divmod(num, 10, &q, &r);
+	q = (num * 3277) >> 15;
 	if (num >= 10) {
 		s = num_append(s, q);
 	}
+	r = num - q*10;
 	*s = r + '0';
 	s++;
 	return s;
