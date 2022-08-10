@@ -286,12 +286,12 @@ void handle_command(char *buf, int sock) {
 	} else if (!strcmp(args[0], "bind")) {
 		int n;
 		if (a != 2) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		} 
 		n = parse_int(args[1]);
 		if ((n < 0) || (n > 65535)) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		} 
 		do_bind(sock, n);
@@ -301,19 +301,19 @@ void handle_command(char *buf, int sock) {
 		int i, p, n;
 
 		if (a != 3) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		} 
 
 		p = explode(args[1], '.', ip, 5);
 		if (p != 4) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		}
 		for (i = 3; i >= 0; i--) {
 			n = parse_int(ip[i]);
 			if ((n < 0) || (n > 255)) {
-				fputstring(sock, "2 Syntax error");
+				fputstring(sock, "2 Syntax error\n");
 				return;
 			}
 			addr <<= 8;
@@ -321,32 +321,32 @@ void handle_command(char *buf, int sock) {
 		}
 		n = parse_int(args[2]);
 		if ((n < 0) || (n > 65535)) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		}
 		do_connect(sock, addr, n);
 	} else if (!strcmp(args[0], "download")) {
 		if (a != 2) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		} 
 		do_download(sock, args[1]);
 
 	} else if (!strcmp(args[0], "upload")) {
 		if (a != 3) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		}
 		int n = parse_int(args[2]);
 		if (n == -1) {
-			fputstring(sock, "2 Syntax error");
+			fputstring(sock, "2 Syntax error\n");
 			return;
 		} 
 		do_upload(sock, args[1], n);
 	} else if (!strcmp(args[0], "exit")) {
 		syscall0(SC_EXIT);
 	} else {
-		fputstring(sock, "2 Syntax error");
+		fputstring(sock, "2 Syntax error\n");
 	}
 }
 
