@@ -34,7 +34,11 @@
 
 void *memset(void *ptr, int what, size_t size);
 void *memcpy(void *dest, const void *src, size_t size);
-uint32_t syscall(uint32_t id, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4, uint32_t arg5);
+uint32_t syscall0(uint32_t id);
+uint32_t syscall1(uint32_t id, uint32_t arg1);
+uint32_t syscall2(uint32_t id, uint32_t arg1, uint32_t arg2);
+uint32_t syscall3(uint32_t id, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+uint32_t syscall4(uint32_t id, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4);
 size_t strlen(const char *src);
 void fputstring(int fd, const char *src);
 void fputhex(int fd, uint32_t val);
@@ -43,5 +47,4 @@ int strcmp(const char *s1, const char *s2);
 int parse_int(const char *s);
 int explode(char *str, char sep, char **parts, int parts_size);
 int main(int argc, char **argv);
-
 #endif

@@ -40,7 +40,7 @@ int parse_int(const char *s) {
 }
 
 void fputstring(int fd, const char *src) {
-    syscall(SC_WRITE, fd, (uint32_t) src, strlen(src), 0, 0);
+    syscall3(SC_WRITE, fd, (uint32_t) src, strlen(src));
 }
 
 void fputhex(int fd, uint32_t val) {
@@ -54,7 +54,7 @@ void fputhex(int fd, uint32_t val) {
     } else {
         c = (val & 0xF) + 'A' - 10;
     }
-    syscall(SC_WRITE, fd, (uint32_t) &c, 1, 0, 0);
+    syscall3(SC_WRITE, fd, (uint32_t) &c, 1);
 }
 
 static void call_main(void *saddr) {
@@ -65,7 +65,7 @@ static void call_main(void *saddr) {
   uint32_t ret;
   
   ret = main(argc, argv);
-  syscall(SC_EXIT, ret, 0, 0, 0, 0);
+  syscall1(SC_EXIT, ret);
 }
 
 void _start(void) {
@@ -81,7 +81,7 @@ void check(int fd, int ret, char *str, int quit) {
     fputhex(fd, -ret);
     fputstring(fd, "\n");
     if (quit)
-	    syscall(SC_EXIT, 1, 0, 0, 0, 0);
+	    syscall1(SC_EXIT, 1);
   }
 }
 
@@ -100,3 +100,20 @@ int explode(char *str, char sep, char **parts, int parts_size) {
 	}
 	return np;
 }
+
+uint32_t syscall3(uint32_t id, uint32_t arg1, uint32_t arg2, uint32_t arg3) {
+	return syscall4(id, arg1, arg2, arg3, 0);
+}
+
+uint32_t syscall2(uint32_t id, uint32_t arg1, uint32_t arg2) {
+	return syscall4(id, arg1, arg2, 0, 0);
+}
+
+uint32_t syscall1(uint32_t id, uint32_t arg1) {
+	return syscall4(id, arg1, 0, 0, 0);
+}
+
+uint32_t syscall0(uint32_t id) {
+	return syscall4(id, 0, 0, 0, 0);
+}
+

