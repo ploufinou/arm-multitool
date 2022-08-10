@@ -6,7 +6,7 @@ AS=$(ARCH)as
 STRIP=$(ARCH)strip
 
 LDFLAGS=-nostdlib -static -Wl,--gc-sections
-CFLAGS=-nostdlib -Os -mthumb -Wall -ffunction-sections -fdata-sections 
+CFLAGS=-nostdlib -Os -Wall -mthumb -ffunction-sections -fdata-sections
 
 EXECS = arm-multitool
 

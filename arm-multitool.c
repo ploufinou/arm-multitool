@@ -52,7 +52,7 @@ int listen_on(int port) {
 	s = syscall2(SC_SOCKET, AF_INET, SOCK_STREAM);
 	
 	ret = syscall3(SC_BIND, s, (uint32_t) &local, sizeof(local));
-	check(2, ret, "Failed to bind socket", 1);
+	check(2, ret, "3 Failed to bind socket", 1);
 
 	syscall1(SC_LISTEN, s);
 
