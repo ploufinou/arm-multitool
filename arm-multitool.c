@@ -153,10 +153,11 @@ void do_tty(int sock) {
 		for (i = 0; i < 3; i++)
 			syscall2(SC_OPEN, (long int) slave_name, O_RDWR);
 		
-		fputstring(sock, "4 TTY\n");
 		r = syscall3(SC_EXECVE, (long int) "/bin/sh", (long int) argv, (long int) envp);
-		check(sock, r, "Failed to exec shell", 0);
+		check(1, r, "Failed to exec shell", 0);
+		syscall0(SC_EXIT);
 	}
+	fputstring(sock, "4 TTY\n");
 	communicate(sock, master);
 	syscall1(SC_CLOSE, master);
 }
