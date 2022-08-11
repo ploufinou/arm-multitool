@@ -23,9 +23,13 @@ r.sendline(b"bind " + sys.argv[3].encode("utf-8"))
 r.recvuntil(b"1 ")
 r.recvuntil(b"\n")
 
-if r.recvuntil(b"4 ACCEPT\n", timeout=1) == b'':
+if r.recvuntil(b"3 ", timeout=1) != b'':
     os.write(1, r.clean())
     sys.exit(0)
+
+r.recvuntil(b"4 ACCEPT\n")
+r.recvuntil(b"PORT")
+r.recvuntil(b"\n")
 
 no = r.fileno()
 
