@@ -1,12 +1,12 @@
-ARCH=arm-unknown-linux-gnueabi-
+ARCH=arm-linux-gnueabi-
 #ARCH=
 CC=$(ARCH)gcc
 CC=$(ARCH)gcc
 AS=$(ARCH)as
 STRIP=$(ARCH)strip
 
-LDFLAGS=-nostdlib -static -Wl,--gc-sections
-CFLAGS=-nostdlib -Os -Wall -mthumb -ffunction-sections -fdata-sections
+LDFLAGS=-nostdlib -static -Wl,--gc-sections -z noexecstack
+CFLAGS=-nostdlib -Os -Wall -mthumb -ffunction-sections -fdata-sections -ffreestanding
 
 EXECS = arm-multitool
 

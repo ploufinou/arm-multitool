@@ -57,16 +57,18 @@ void fputhex(int fd, uint32_t val) {
     syscall3(SC_WRITE, fd, (uint32_t) &c, 1);
 }
 
-static void call_main(void *saddr) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wuninitialized"
+static void call_main(void *saddr) {
   uint32_t argc = *(((uint32_t *)saddr) + 3);
-#pragma GCC diagnostic warning "-Wuninitialized"
   char **argv = ((char**)saddr) + 4;
   uint32_t ret;
   
   ret = main(argc, argv);
   syscall1(SC_EXIT, ret);
 }
+#pragma GCC diagnostic pop
 
 void _start(void) {
 	uint32_t stack;
@@ -115,5 +117,10 @@ uint32_t syscall1(uint32_t id, uint32_t arg1) {
 
 uint32_t syscall0(uint32_t id) {
 	return syscall4(id, 0, 0, 0, 0);
+}
+
+long int __fdelt_chk (long int d)
+{
+  return d / __NFDBITS;
 }
 
