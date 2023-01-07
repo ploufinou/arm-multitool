@@ -1,11 +1,5 @@
 #include "common.h"
 
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <signal.h>
-#include <fcntl.h>
-
 void handle_signals() {
 	struct sigaction sa;
 

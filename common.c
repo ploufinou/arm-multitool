@@ -119,8 +119,11 @@ uint32_t syscall0(uint32_t id) {
 	return syscall4(id, 0, 0, 0, 0);
 }
 
+uint16_t htons(uint16_t arg) {
+	return ((arg & 0xFF) << 8) | ((arg >> 8) & 0xFF);
+}
+
 long int __fdelt_chk (long int d)
 {
   return d / __NFDBITS;
 }
-
